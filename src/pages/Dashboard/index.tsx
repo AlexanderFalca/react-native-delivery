@@ -49,33 +49,53 @@ const Dashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<
     number | undefined
   >();
+
   const [searchValue, setSearchValue] = useState('');
 
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
     // Navigate do ProductDetails page
+
+    navigation.navigate('FoodDetails', {
+      id,
+    });
   }
 
   useEffect(() => {
-    async function loadFoods(): Promise<void> {
-      // Load Foods from API
-    }
-
-    loadFoods();
-  }, [selectedCategory, searchValue]);
-
-  useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      const response = await api.get<Category[]>('categories');
+
+      setCategories(response.data);
     }
 
     loadCategories();
   }, []);
 
-  function handleSelectCategory(id: number): void {
+  useEffect(() => {
+    async function loadFoods(): Promise<void> {
+      const response = await api.get<Food[]>('foods', {
+        params: {
+          category_like: selectedCategory,
+          name_like: searchValue,
+        },
+      });
+
+      const serializedData = response.data.map(food => ({
+        ...food,
+        formattedPrice: formatValue(food.price),
+      }));
+
+      setFoods(serializedData);
+    }
+
+    loadFoods();
+  }, [selectedCategory, searchValue]);
+
+  const handleSelectCategory = async (id: number): Promise<void> => {
     // Select / deselect category
-  }
+    setSelectedCategory(id === selectedCategory ? undefined : id);
+  };
 
   return (
     <Container>
@@ -135,21 +155,4 @@ const Dashboard: React.FC = () => {
                 <FoodImageContainer>
                   <Image
                     style={{ width: 88, height: 88 }}
-                    source={{ uri: food.thumbnail_url }}
-                  />
-                </FoodImageContainer>
-                <FoodContent>
-                  <FoodTitle>{food.name}</FoodTitle>
-                  <FoodDescription>{food.description}</FoodDescription>
-                  <FoodPricing>{food.formattedPrice}</FoodPricing>
-                </FoodContent>
-              </Food>
-            ))}
-          </FoodList>
-        </FoodsContainer>
-      </ScrollView>
-    </Container>
-  );
-};
-
-export default Dashboard;
+             
